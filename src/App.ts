@@ -1,38 +1,42 @@
-import * as express from "express";
-import { Request, Response, Router, RequestHandler } from "express";
-import "reflect-metadata";
-import { ContainerFactory } from "./container/ContainerFactory";
-import { DependencyKeys } from "./container/DependencyKeys";
-import { IRouteProvider } from "./routes/IRouteProvider";
-import { AppBuilder } from "./core/AppBuilder";
-import { LibraryCustomizations } from "./utils/LibraryCustomization";
+import express from "express";
+import { RequestHandler } from "express";
+import { ContainerFactory } from "../src/container/ContainerFactory";
+import { DependencyKeys } from "../src/container/DependencyKeys";
+import { IRouteProvider } from "../src/interfaces/IRouteProvider";
 
 export class App {
-  public readonly app: express.Express;
+  private app: express.Express;
 
   constructor() {
-    const container = ContainerFactory.getContainer();
-
-    const router: Router = express.Router();
-    const handler: RequestHandler = (req: Request, res: Response): void => {
-      res.send("APIs Started!");
-    };
-    router.get("/", handler);
-
-    const routeProviders = container.getAll<IRouteProvider>(
-      DependencyKeys.Routes
-    );
-    routeProviders.forEach((provider) => provider.configureRoutes(router));
-
-    this.app = new AppBuilder()
-      .withJsonContent()
-      .withRoute("/", router)
-      .build();
-
-    LibraryCustomizations.init();
+    this.app = express();
+    this.configureMiddleware();
+    this.configureRoutes();
   }
 
-  public static init(): express.Express {
-    return new App().app;
+  private configureMiddleware() {
+    this.app.use(express.json());
+  }
+
+  private configureRoutes() {
+    const router = express.Router();
+
+    router.get("/", ((req, res) => {
+      res.send("API Started");
+    }) as RequestHandler);
+
+    const container = ContainerFactory.getContainer();
+    const routeProviders = container.getAll<IRouteProvider>(DependencyKeys.Routes);
+
+    for (const provider of routeProviders) {
+      provider.configureRoutes(router);
+    }
+
+    this.app.use("/api", router);
+  }
+
+  public listen(port: number) {
+    this.app.listen(port, () => {
+      console.log(`🚀 Server is running on http://localhost:${port}`);
+    });
   }
 }

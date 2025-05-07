@@ -1,12 +1,16 @@
+// container/ContainerFactory.ts
 import { Container } from "inversify";
-import { IRouteProvider } from "../routes/IRouteProvider";
+import { IRouteProvider } from "../interfaces/IRouteProvider";
+import { IAuthService } from "../interfaces/IAuthService";
 import { AuthRoutes } from "../routes/AuthRoutes";
+import { AuthService } from "../implementation/AuthService";
 import { DependencyKeys } from "./DependencyKeys";
 
 export class ContainerFactory {
   static getContainer(): Container {
     const container = new Container();
-    container.bind<IRouteProvider>(DependencyKeys.Routes).to(AuthRoutes);     // Here the Bind function is used to tell the container when there is a request made for Route key 
+    container.bind<IRouteProvider>(DependencyKeys.Routes).to(AuthRoutes);
+    container.bind<IAuthService>(DependencyKeys.AuthService).to(AuthService);
     return container;
   }
 }
